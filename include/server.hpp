@@ -4,84 +4,100 @@
 #include <functional>
 #include <memory>
 #include <unordered_set>
+#include <unordered_map>
 #include <mutex>
+#include <string>
 
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 #include <taskflow/taskflow.hpp>
-
 #include "common.hpp"
 
 namespace Chat {
-    using tcp = boost::asio::ip::tcp;
-    using asio_context = boost::asio::io_context;
-    using asio_constant_buffer = boost::asio::const_buffer;
-    
-    static constexpr auto serialize   = ChatSerDes::serialize;    // serialize(const T& value) -> ByteBuffer
-    static constexpr auto deserialize = ChatSerDes::deserialize;          // deserialize(ByteView& bytes, T& value) -> ChatMessage
-    using Byte          = ChatSerDes::Byte;         // std::uint8_t
-    using Int32         = ChatSerDes::Int32;        // std::uint32_t
-    using ByteBuffer    = ChatSerDes::ByteBuffer;   // std::vector<Byte>
-    using ByteView      = ChatSerDes::ByteView;     // span<const Byte>
-    
-    class Session : public std::enable_shared_from_this<Session> {
-    public:
-        Session(tcp::socket socket,
-                std::function<void(const ByteBuffer&, std::shared_ptr<Session>)> on_message,
-                std::function<void(std::shared_ptr<Session>)> on_close)
-            : _socket(std::move(socket))
-            , _on_message(on_message)
-            , _on_close(on_close)
-            , _read_buffer(sizeof(Int32)) {}
-        void start();
-        void send(const ByteBuffer& message);
-        std::string get_address() const;
-        
-        void        set_room(const std::string& room) {_roomName = room;}
-        std::string get_room() const           {return _roomName;}
-    private:
-        std::string _roomName{"General"}; 
-        void read_header();
-        void read_body(size_t length);
-        void write();
 
-        tcp::socket _socket;
-        ByteBuffer _read_buffer;
-        std::mutex _write_mutex;
-        std::vector<ByteBuffer> _write_queue;
+using tcp = boost::asio::ip::tcp;
+using asio_context = boost::asio::io_context;
 
-        std::function<void(const ByteBuffer&, std::shared_ptr<Session>)> _on_message;
-        std::function<void(std::shared_ptr<Session>)> _on_close;
-    };
+// Short aliases
+static constexpr auto serialize   = ChatSerDes::serialize;
+static constexpr auto deserialize = ChatSerDes::deserialize;
+using Byte       = ChatSerDes::Byte;
+using ByteBuffer = ChatSerDes::ByteBuffer;
+using ByteView   = ChatSerDes::ByteView;
+using Int32      = ChatSerDes::Int32;
 
-    class Server {
-    public:
-        Server(asio_context& io_context, const tcp::endpoint& endpoint)
-            : _io_context(io_context)
-            , _acceptor(io_context, endpoint) { build_taskflow_pipeline(); }
-        
-        void start_accept() { accept(); }
-        void broadcast(const ByteBuffer& message);
-        void broadcast_to_room(const std::string& room, const ByteBuffer& message);
+class Session; // forward
 
-    private:
-        void accept();
-        void build_taskflow_pipeline();
+/**
+ * The main server that listens on a port, accepts new connections,
+ * and broadcasts messages to the right “room” or all sessions.
+ */
+class Server {
+public:
+// optional ssl context
+	Server(asio_context& io, const tcp::endpoint& ep);
+	Server(asio_context& io, const tcp::endpoint& ep, boost::asio::ssl::context& ssl_context);
+	void start_accept();
 
-        asio_context& _io_context;
-        tcp::acceptor _acceptor;
-        std::mutex _sessions_mutex;
-        std::unordered_set<std::shared_ptr<Session>> _sessions;
+	// Multi-room broadcast
+	void broadcastToRoom(const std::string& room, const ByteBuffer& data);
 
-        std::unordered_map<std::string, std::unordered_set<std::shared_ptr<Session>>> _rooms;
-        std::mutex _roomsMutex;
+	// For demonstration, we store chat logs in memory for "search"
+	// In a real system, you'd use a database.
+	// Key: roomName -> vector of messages
+	std::unordered_map<std::string, std::vector<ChatMessage>> _roomLogs;
+	std::mutex _roomLogsMutex;
 
+private:
+	void accept();
+	void build_taskflow_pipeline();
 
-        tf::Taskflow _taskflow;
-        tf::Executor _executor;
+	asio_context& _io;
+	tcp::acceptor _acceptor;
+	std::mutex _sessionsMutex;
+	std::unordered_set<std::shared_ptr<Session>> _sessions;
+	boost::asio::ssl::context* _ssl_context{nullptr};
 
-        bool _pipeline_built{false};
+	// We'll track which sessions are in which room
+	// roomName -> set of sessions
+	std::unordered_map<std::string, std::unordered_set<std::shared_ptr<Session>>> _rooms;
+	std::mutex _roomsMutex;
 
-    };
+	tf::Taskflow _taskflow;
+	tf::Executor _executor;
+	bool _pipelineBuilt{false};
 
-} // namespace chat
+	friend class Session;
+};
 
+class Session : public std::enable_shared_from_this<Session> {
+public:
+	Session(tcp::socket socket,
+					std::function<void(const ByteBuffer&, std::shared_ptr<Session>)> onMessage,
+					std::function<void(std::shared_ptr<Session>)> onClose);
+
+	void start();
+	void send(const ByteBuffer& data);
+	std::string get_address() const;
+
+	// Get/set the current room name
+	void setRoom(const std::string& room);
+	std::string getRoom() const;
+
+private:
+	void read_header();
+	void read_body(size_t length);
+	void write();
+
+	tcp::socket _socket;
+	ByteBuffer _readBuffer;
+	std::mutex _writeMutex;
+	std::vector<ByteBuffer> _writeQueue;
+
+	std::string _roomName; // current room name
+
+	std::function<void(const ByteBuffer&, std::shared_ptr<Session>)> _onMessage;
+	std::function<void(std::shared_ptr<Session>)> _onClose;
+};
+
+} // namespace Chat

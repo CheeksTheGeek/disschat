@@ -1,2 +1,5 @@
 build
 subprojects
+*.crt
+*.key
+*.ini

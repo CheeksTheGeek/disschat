@@ -33,6 +33,8 @@ opengl_dep = dependency('opengl', required : true)
 glfw_dep   = dependency('glfw3', required : true, method : 'pkg-config')
 # If pkg-config fails, you might do `compiler.find_library('glfw', dirs: ...)` as fallback
 
+openssl_dep = dependency('openssl', required: true)
+
 # 5) macOS frameworks (since you are on macOS)
 frameworks = [
   '-framework', 'Cocoa',
@@ -40,6 +42,7 @@ frameworks = [
   '-framework', 'OpenGL',
   '-framework', 'IOKit',
   '-framework', 'CoreVideo'
+  
 ]
 framework_dep = declare_dependency(link_args : frameworks)
 
@@ -50,13 +53,15 @@ client_deps = [
   taskflow_dep,
   opengl_dep,
   glfw_dep,
-  framework_dep
+  framework_dep,
+  openssl_dep
 ]
 
 # The server only needs Boost and Taskflow
 server_deps = [
   boost_dep,
-  taskflow_dep
+  taskflow_dep,
+  openssl_dep
 ]
 
 #

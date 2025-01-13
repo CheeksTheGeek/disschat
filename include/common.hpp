@@ -8,6 +8,10 @@
 #include <cstring>
 #include <stdexcept>
 
+const bool DEBUGGING = true;
+
+
+
 /**
  * Represents a single user chat message or event (like file, typing, etc.).
  */
