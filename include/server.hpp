@@ -36,7 +36,7 @@ namespace Chat {
         void send(const ByteBuffer& message);
         std::string get_address() const;
         
-        void set_room(const std::string& room) {_roomName = room;}
+        void        set_room(const std::string& room) {_roomName = room;}
         std::string get_room() const           {return _roomName;}
     private:
         std::string _roomName{"General"}; 
