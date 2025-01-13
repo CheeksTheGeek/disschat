@@ -1,0 +1,3 @@
+[submodule "subprojects/brisk"]
+	path = subprojects/brisk
+	url = https://github.com/brisklib/brisk.git
