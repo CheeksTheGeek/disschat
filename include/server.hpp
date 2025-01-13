@@ -25,7 +25,6 @@ namespace Chat {
     
     class Session : public std::enable_shared_from_this<Session> {
     public:
-
         Session(tcp::socket socket,
                 std::function<void(const ByteBuffer&, std::shared_ptr<Session>)> on_message,
                 std::function<void(std::shared_ptr<Session>)> on_close)
@@ -36,8 +35,11 @@ namespace Chat {
         void start();
         void send(const ByteBuffer& message);
         std::string get_address() const;
-
+        
+        void set_room(const std::string& room) {_roomName = room;}
+        std::string get_room() const           {return _roomName;}
     private:
+        std::string _roomName{"General"}; 
         void read_header();
         void read_body(size_t length);
         void write();
@@ -59,6 +61,7 @@ namespace Chat {
         
         void start_accept() { accept(); }
         void broadcast(const ByteBuffer& message);
+        void broadcast_to_room(const std::string& room, const ByteBuffer& message);
 
     private:
         void accept();
@@ -68,6 +71,10 @@ namespace Chat {
         tcp::acceptor _acceptor;
         std::mutex _sessions_mutex;
         std::unordered_set<std::shared_ptr<Session>> _sessions;
+
+        std::unordered_map<std::string, std::unordered_set<std::shared_ptr<Session>>> _rooms;
+        std::mutex _roomsMutex;
+
 
         tf::Taskflow _taskflow;
         tf::Executor _executor;

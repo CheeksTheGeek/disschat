@@ -78,6 +78,13 @@ int main() {
         // Connect the client to 127.0.0.1:5555
         g_client.connect("127.0.0.1", 5555);
 
+        // Add this to capture incoming messages from the server:
+        g_client.on_incoming_message = [](const ChatMessage& msg) {
+            // Format your chat line however you want:
+            AppendToChatLog("[" + msg.sender + "]: " + msg.text);
+        };
+
+
         // Main loop
         bool done = false;
         while (!glfwWindowShouldClose(window) && !done)

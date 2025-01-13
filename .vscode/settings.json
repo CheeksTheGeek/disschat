@@ -76,7 +76,19 @@
         "any": "cpp",
         "scoped_allocator": "cpp",
         "bit": "cpp",
-        "functional": "cpp"
+        "functional": "cpp",
+        "atomic": "cpp",
+        "hash_map": "cpp",
+        "*.tcc": "cpp",
+        "chrono": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "exception": "cpp",
+        "iterator": "cpp",
+        "memory_resource": "cpp",
+        "random": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp"
     },
     "C_Cpp.default.cppStandard": "c++23"
 }

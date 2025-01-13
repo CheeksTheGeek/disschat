@@ -6,7 +6,11 @@ namespace Chat{
 
 // Session's constructor inlined in header
 
-void Session::start() {read_header();}
+void Session::start() {
+    read_header();
+    
+}
+
 
 void Session::send(const ByteBuffer& message) {
     {
@@ -117,6 +121,7 @@ void Server::accept() {
                     std::lock_guard<std::mutex> lock(_sessions_mutex);
                     _sessions.insert(session);
                 }
+                session->set_room("General");
                 session->start();
             }
             accept();
@@ -132,5 +137,12 @@ void Server::build_taskflow_pipeline() {
     _taskflow.name("ServerMessageProcessing");
 }
 
+void Server::broadcast_to_room(const std::string& room, const ByteBuffer& message) {
+    std::lock_guard<std::mutex> lock(_roomsMutex);
+    auto it = _rooms.find(room);
+    if(it != _rooms.end())
+        for(auto& session : it->second)
+            session->send(message);
+}
 
 } // namespace Chat
