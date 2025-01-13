@@ -33,7 +33,7 @@ static char g_nameBuf[128] = "User";
 static char g_msgBuf[256]  = "";
 
 // We want to connect by default to localhost:5555
-static ChatClient g_client;
+static Chat::Client g_client;
 
 void AppendToChatLog(const std::string& line) {
     std::lock_guard<std::mutex> lock(g_chatLogMutex);
@@ -98,7 +98,7 @@ int main() {
                 ImGui::InputText("Message", g_msgBuf, IM_ARRAYSIZE(g_msgBuf), ImGuiInputTextFlags_EnterReturnsTrue);
 
                 ImGui::SameLine();
-                if (ImGui::Button("Send") || ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter))) {
+                if (ImGui::Button("Send")) {
                     if (std::string(g_msgBuf).empty()) AppendToChatLog("Cannot send an empty message!");
                     else {
                         ChatMessage msg;

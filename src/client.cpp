@@ -21,7 +21,7 @@ void Client::connect(const std::string& host, unsigned short port) {
     _connect(host, port);
 
     // launch the IO context in background
-    _thread = std::thread([this] { 
+    _io_thread = std::thread([this] { 
         try {
             _io_context.run();
         } catch(const std::exception& e) {
@@ -81,12 +81,13 @@ void Client::read_header() {
 void Client::read_body(size_t length) {
     _read_buffer.resize(length);
     boost::asio::async_read(_socket, boost::asio::buffer(_read_buffer), 
-        [this](const boost::system::error_code& ec, std::size_t bytes_transferred) {
+        [this, length](const boost::system::error_code& ec, std::size_t bytes_transferred) {
             if (!ec && bytes_transferred == length) {
                 try {
-                    auto chat_message = deserialize(_read_buffer);
+                    ByteView view(_read_buffer);
+                    ChatMessage chat_message = deserialize(view);
                     if (on_incoming_message) on_incoming_message(chat_message);
-                } catch(const std::exception& e) std::cerr << "[Client] Deserialization error: " << e.what() << std::endl;
+                } catch(const std::exception& e) {std::cerr << "[Client] Deserialization error: " << e.what() << std::endl;}
                 _read_buffer.resize(sizeof(Int32));
                 read_header();
             } else (_connected = false, std::cerr << "[Client] Read body error: " << ec.message() << std::endl);

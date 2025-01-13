@@ -16,7 +16,7 @@ namespace Chat {
     using asio_context = boost::asio::io_context;
     using asio_constant_buffer = boost::asio::const_buffer;
     
-    static constexpr auto serialize   = ChatSerDes::serialize<>;    // serialize(const T& value) -> ByteBuffer
+    static constexpr auto serialize   = ChatSerDes::serialize;    // serialize(const T& value) -> ByteBuffer
     static constexpr auto deserialize = ChatSerDes::deserialize;          // deserialize(ByteView& bytes, T& value) -> ChatMessage
     using Byte          = ChatSerDes::Byte;         // std::uint8_t
     using Int32         = ChatSerDes::Int32;        // std::uint32_t
@@ -39,7 +39,7 @@ namespace Chat {
 
     private:
         void read_header();
-        void read_body();
+        void read_body(size_t length);
         void write();
 
         tcp::socket _socket;
@@ -49,7 +49,7 @@ namespace Chat {
 
         std::function<void(const ByteBuffer&, std::shared_ptr<Session>)> _on_message;
         std::function<void(std::shared_ptr<Session>)> _on_close;
-    }
+    };
 
     class Server {
     public:
@@ -57,7 +57,7 @@ namespace Chat {
             : _io_context(io_context)
             , _acceptor(io_context, endpoint) { build_taskflow_pipeline(); }
         
-        auto start_accept() = std::forward<void()>(&Server::accept);
+        void start_accept() { accept(); }
         void broadcast(const ByteBuffer& message);
 
     private:
@@ -74,7 +74,7 @@ namespace Chat {
 
         bool _pipeline_built{false};
 
-    }
+    };
 
 } // namespace chat
 

@@ -17,8 +17,8 @@ namespace Chat {
     using tcp = boost::asio::ip::tcp;
     using socket = boost::asio::ip::tcp::socket;
     
-    using serialize = ChatSerDes::serialize;
-    using deserialize = ChatSerDes::deserialize;
+    static constexpr auto serialize = ChatSerDes::serialize;
+    static constexpr auto deserialize = ChatSerDes::deserialize;
     using Byte = ChatSerDes::Byte;
     using Int32 = ChatSerDes::Int32;
     using ByteBuffer = ChatSerDes::ByteBuffer;
@@ -52,5 +52,5 @@ namespace Chat {
         tf::Executor _executor;
 
         bool _connected = false;
-    }
+    };
 }

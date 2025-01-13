@@ -5,15 +5,6 @@
 #include <vector>
 #include <span>
 #include <bit>
-#if __cplusplus > 202002L
-#error "C++23 or later"
-#elif __cplusplus > 201703L
-#error "C++20"
-#elif __cplusplus > 201402L
-#error "C++17"
-#else
-#error "C++14 or earlier"
-#endif
 
 struct ChatMessage { std::string sender, text; };
 
@@ -36,10 +27,20 @@ namespace ChatSerDes {
      * @return ByteBuffer The serialized value.
      */
     template<typename T>
+    T byteswap(T value) {
+        static_assert(std::is_integral_v<T>, "Byte swap only works with integral types");
+        T result = 0;
+        for(size_t i = 0; i < sizeof(T); ++i) {
+            result = (result << 8) | ((value >> (i * 8)) & 0xFF);
+        }
+        return result;
+    }
+
+    template<typename T>
     ByteBuffer serialize_value(const T& value) {
         ByteBuffer bytes(sizeof(T));
         auto le_value = std::endian::native == std::endian::little ? 
-            value : std::byteswap(value);
+            value : byteswap(value);
         std::memcpy(bytes.data(), &le_value, sizeof(T));
         return bytes;
     }
@@ -99,7 +100,7 @@ namespace ChatSerDes {
         T value;
         std::memcpy(&value, data.data(), sizeof(T));
         value = std::endian::native == std::endian::little ? 
-            value : std::byteswap(value);
+            value : byteswap(value);
         data = data.subspan(sizeof(T));
         return value;
     }

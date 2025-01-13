@@ -3,7 +3,7 @@ project(
   'cpp',
   version : '0.1.0',
   default_options : [
-    'cpp_std=c++23',
+    'cpp_std=c++20',
   ]
 )
 
@@ -91,7 +91,4 @@ client_exe = executable(
   install : true
 )
 
-#
-# Done!
-#
 message('Configured Meson project with a server and client executable.')

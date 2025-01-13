@@ -95,8 +95,9 @@ void Server::accept() {
                     // dispatch to taskflow for concurrency
                     auto task = _taskflow.emplace([this, data, sender]() {
                         try {
-                            auto message = deserialize(data);
-                            std::cout << "[Server] " << sender->remoteAddress() << " => " << message.sender << ": " << message.text << std::endl;
+                            ByteView view(data);
+                            ChatMessage message = deserialize(view);
+                            std::cout << "[Server] " << sender->get_address() << " => " << message.sender << ": " << message.text << std::endl;
                             broadcast(serialize(message));
                         } catch (const std::exception& e) {
                             std::cerr << "[Server] Deserialization error: " << e.what() << std::endl;
