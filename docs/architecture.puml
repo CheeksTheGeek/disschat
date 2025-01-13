@@ -1,0 +1,107 @@
+@startuml DissChat_Architecture
+
+!define RECTANGLE class
+
+' Define Components
+RECTANGLE "Client Application\n(client)" as Client {
+  +GUI Layer
+  +Networking Layer
+  +Concurrency Layer
+  +Features:
+    - Multi-Room Support
+    - File Sharing
+    - Typing Indicators
+    - Message Handling
+    - Search Functionality
+}
+
+RECTANGLE "Server Application\n(server)" as Server {
+  +Networking Layer
+  +Concurrency Layer
+  +Data Management:
+    - Chat Rooms
+    - Message Broadcasting
+    - Message Persistence
+    - Search Functionality
+  +Features:
+    - Multi-Room Broadcasting
+    - File Broadcasting
+    - Typing Notifications
+    - Command Parsing
+}
+
+RECTANGLE "Common Components\n(include/common.hpp)" as Common {
+  +ChatMessage Struct
+  +Serialization/Deserialization
+}
+
+RECTANGLE "Taskflow\n(subprojects/taskflow)" as Taskflow {
+  +Task Scheduling
+  +Concurrency Management
+}
+
+RECTANGLE "Boost.Asio\n(boost/asio.hpp)" as BoostAsio {
+  +Asynchronous Networking
+}
+
+RECTANGLE "ImGui\n(subprojects/imgui-1.91.6)" as ImGui {
+  +GUI Rendering
+  +User Interface Components
+}
+
+RECTANGLE "GLFW\n(glfw3)" as GLFW {
+  +Window Management
+  +Input Handling
+}
+
+RECTANGLE "OpenGL\n(opengl)" as OpenGL {
+  +Graphics Rendering
+}
+
+' Define Relationships
+
+Client -down-> ImGui : Uses
+Client -down-> GLFW : Uses
+Client -down-> OpenGL : Uses
+Client -right-> BoostAsio : Uses
+Client -right-> Taskflow : Uses
+Client -left-> Common : Includes
+
+Server -right-> BoostAsio : Uses
+Server -right-> Taskflow : Uses
+Server -left-> Common : Includes
+
+Common --> BoostAsio : Utilizes
+Common --> Taskflow : Utilizes
+
+Taskflow <--> Server : Manages\nConcurrent Tasks
+Taskflow <--> Client : Manages\nConcurrent Tasks
+
+BoostAsio <--> Client : Handles\nNetworking
+BoostAsio <--> Server : Handles\nNetworking
+
+ImGui <--> Client : Renders\nGUI
+
+GLFW <--> ImGui : Interfaces for\nWindow & Input
+OpenGL <--> ImGui : Renders Graphics
+
+' Data Flow
+Client --> Server : Connects via TCP\n(Boost.Asio)
+Client --> Server : Sends ChatMessage
+Server --> Client : Broadcasts ChatMessage
+
+' Notes
+note right of Client
+  - GUI built with ImGui, GLFW, OpenGL
+  - Asynchronous networking with Boost.Asio
+  - Concurrency managed by Taskflow
+end note
+
+note left of Server
+  - Manages multiple chat rooms
+  - Handles message broadcasting within rooms
+  - Processes commands like /join, /search
+  - Manages message persistence
+end note
+
+@enduml
